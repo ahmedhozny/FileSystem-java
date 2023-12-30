@@ -7,10 +7,14 @@ public class vFile implements Serializable {
 	private String location;
 	private String type;
 	private long size;
-	private int blocks;
+	private int numOfBlocks;
 	private byte protection;
 	private Date creationTime;
 	private Date modificationTime;
 	private Date accessTime;
 	private transient String content;
+
+	public String getName() {
+		return name;
+	}
 }
