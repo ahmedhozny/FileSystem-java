@@ -1,13 +1,11 @@
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.nio.file.FileAlreadyExistsException;
 import java.util.*;
 
 public class Loader {
 	static Scanner scanner = new Scanner(System.in);
 	static Hashtable<Character, vPartition> vPartitions = new Hashtable<>();
 
-	public static void main(String[] __) throws FileNotFoundException, FileAlreadyExistsException {
+	public static void main(String[] __) throws Exception {
 		System.out.println("Starting virtual file system (experimental):");
 		File directory = new File(".");
 
@@ -58,19 +56,34 @@ public class Loader {
 					else
 						partitionLooper(vPartitions.get(args[1].toUpperCase().charAt(0)));
 					break;
+				case "delete":
+					if (args.length < 2)
+						System.out.println("Usage: use <partition label>.");
+					else if (args[1].length() != 1)
+						System.out.println("Partition label must be a single letter.");
+					else if (!vPartitions.containsKey(args[1].toUpperCase().charAt(0)))
+						System.out.println("Partition doesn't exists.");
+					else
+					{
+						char label = args[1].toUpperCase().charAt(0);
+						File file = new File(vPartitions.remove(label).getUuid().toString() + ".vpar");
+						if (file.delete())
+							System.out.printf("Partition %c removed.\n", label);
+					}
 				case "exit":
 					System.out.println("Goodbye!");
 					scanner.close();
 					System.exit(0);
-					break;
+					return;
+
 				default:
 					System.out.println("Invalid command. Please enter a valid option.");
 			}
 		}
 	}
 
-	public static void partitionLooper(vPartition vPartition) {
-		char label = vPartition.getPartitionLabel();
+	public static void partitionLooper(vPartition partition) {
+		char label = partition.getPartitionLabel();
 		System.out.printf("Partition %c selected%n", label);
 		while (true) {
 			System.out.printf("%c:\\> ", label);
@@ -79,7 +92,11 @@ public class Loader {
 				case "exit":
 					System.out.println("Exiting to File System");
 					return;
-
+				case "info":
+					System.out.println("________________________");
+					System.out.print(partition);
+					System.out.println("________________________");
+					break;
 				default:
 					System.out.println("Invalid command. Please enter a valid option.");
 			}
