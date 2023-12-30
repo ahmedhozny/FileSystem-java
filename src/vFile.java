@@ -1,6 +1,7 @@
+import java.io.Serializable;
 import java.util.Date;
 
-public class vFile {
+public class vFile implements Serializable {
 	private String name;
 	private int identifier;
 	private String location;
@@ -11,5 +12,5 @@ public class vFile {
 	private Date creationTime;
 	private Date modificationTime;
 	private Date accessTime;
-	private String content;
+	private transient String content;
 }

@@ -25,8 +25,6 @@ public class Loader {
 			}
 		}
 
-		System.out.println(vPartitions);
-
 		while (true) {
 			System.out.print("FS > ");
 
@@ -42,7 +40,7 @@ public class Loader {
 						System.out.println("Partition label must be a single letter.");
 					else if (vPartitions.containsKey(args[1].toUpperCase().charAt(0)))
 						System.out.println("Partition already exists.");
-					else if (Long.parseLong(args[2]) > 1048576L)
+					else if (Long.parseLong(args[2]) > 10485760L)
 						System.out.println("For experimental reasons, max size of partition is 10 MB");
 					else {
 						char label = args[1].toUpperCase().charAt(0);

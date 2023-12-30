@@ -1,8 +1,7 @@
 import java.io.*;
 import java.io.File;
 import java.nio.file.FileAlreadyExistsException;
-import java.util.ArrayList;
-import java.util.UUID;
+import java.util.*;
 
 public class vPartition implements Serializable {
 	public static final int blockSize = 4096;  // 4096 bits (512 Bytes)
@@ -11,9 +10,9 @@ public class vPartition implements Serializable {
 	private final long partitionSize;
 	private long usedSpace;
 	private long freeSpace;
+	private int numOfFats = 255;
 	transient private final RandomAccessFile partitionHead;
-	private final ArrayList<Integer> files_blocks;
-
+	transient private final FileAllocationTable fat;
 	public vPartition(String uuid_string) throws FileNotFoundException {
 		String filePath = "%s.vpar".formatted(uuid_string);
 		File file = new File(filePath);
@@ -21,15 +20,15 @@ public class vPartition implements Serializable {
 			throw new FileNotFoundException(filePath);
 		try {
 			this.partitionHead = new RandomAccessFile(file, "rw");
-
 			try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(readBlock(0)))) {
-				// Deserialize the object from the first block
 				vPartition deserialized = (vPartition) ois.readObject();
 				this.uuid = deserialized.uuid;
 				this.partitionLabel = deserialized.partitionLabel;
 				this.partitionSize = deserialized.partitionSize;
-				this.files_blocks = deserialized.files_blocks;
 			}
+
+			this.fat = deserializeFat();
+
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -46,23 +45,98 @@ public class vPartition implements Serializable {
 		try {
 			this.partitionHead = new RandomAccessFile(file, "rw");
 			this.partitionHead.setLength(partitionSize);
+			this.partitionLabel = driveLabel;
+			this.partitionSize = partitionSize;
+			this.fat = new FileAllocationTable((int) Math.ceilDiv(partitionSize, blockSize));
+			serializeFat();
+			try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			     ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+				oos.writeObject(this);
+				writeBlock(0, baos.toByteArray());
+			}
+			try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			     ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+				oos.writeObject(this.fat);
+				writeBlock(1, baos.toByteArray());
+			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
 
-		this.partitionLabel = driveLabel;
-		this.partitionSize = partitionSize;
-		this.files_blocks = new ArrayList<>();
-
+	public void serializeFat() {
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		     ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-			oos.writeObject(this);
-			writeBlock(0, baos.toByteArray());
+			oos.writeObject(this.fat);
+
+			byte[] serializedData = baos.toByteArray();
+
+			for (int i = 0; i < Math.ceilDiv(serializedData.length, blockSize); i++) {
+				byte[] chunk = new byte[blockSize];
+				int startIdx = (i * blockSize);
+				int endIdx = Math.min((i + 1) * blockSize, serializedData.length);
+				System.arraycopy(serializedData, startIdx, chunk, 0, endIdx - startIdx);
+				writeBlock(i + 1, chunk);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public FileAllocationTable deserializeFat() {
+		byte[] obj = new byte[blockSize * numOfFats];
+
+		try {
+			for (int i = 0; i < numOfFats; i++) {
+				byte[] chunk = readBlock(i + 1);
+				System.arraycopy(chunk, 0, obj, i * blockSize, chunk.length);
+			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 
-		System.out.println("LOL");
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(obj);
+		     ObjectInputStream ois = new ObjectInputStream(bais)) {
+			return (FileAllocationTable) ois.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public void createFile(String fileName) {
+		if (fat.getFileStartBlock(fileName) != -1)
+			return;
+		fat.createFile(fileName, -1);
+	}
+
+	public void saveFileData(String fileName, byte[] data) {
+		if (data.length == 0)
+			fat.createFile(fileName, -1);
+
+		int[] allocatedBlocks = new int[Math.ceilDiv(data.length, blockSize)];
+
+		Arrays.setAll(allocatedBlocks, i -> fat.allocateBlock());
+
+		int dataIndex = 0;
+		for (int i = 0; i < allocatedBlocks.length; i++) {
+			int BlockIndex = allocatedBlocks[i];
+			byte[] BlockData = Arrays.copyOfRange(data, dataIndex, dataIndex + blockSize);
+
+			try {
+				writeBlock(BlockIndex, BlockData);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+
+			dataIndex += blockSize;
+
+			if (i < allocatedBlocks.length - 1) {
+				int nextBlockIndex = allocatedBlocks[i + 1];
+				fat.setNextBlock(BlockIndex, nextBlockIndex);
+			}
+		}
+
+		fat.createFile(fileName, allocatedBlocks[0]);
 	}
 
 	private void writeBlock(int blockNumber, byte[] data) throws IOException {
