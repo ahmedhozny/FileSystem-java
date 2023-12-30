@@ -12,8 +12,6 @@ public class vFile implements Serializable {
 	private Date creationTime;
 	private Date modificationTime;
 	private Date accessTime;
-	private transient String content;
-
 	public String getName() {
 		return name;
 	}
