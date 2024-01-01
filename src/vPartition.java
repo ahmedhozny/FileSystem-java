@@ -200,8 +200,10 @@ public class vPartition implements Serializable {
 		if (file == null)
 			throw new IllegalArgumentException("File doesn't exists");
 
-		deleteFileData(directory, file);
+		long n_blocks = deleteFileData(directory, file);
 		directory.deleteEntry(file);
+		usedSpace -= n_blocks * blockSize;
+		freeSpace += n_blocks * blockSize;
 	}
 
 	/**
@@ -299,11 +301,16 @@ public class vPartition implements Serializable {
 			byte[] result = new byte[totalSize];
 
 			int offset = 0;
-			for (int i = 0; i < blocks.size(); i++) {
-				byte[] block = blocks.get(i);
+			for (byte[] block : blocks) {
 				System.arraycopy(block, 0, result, offset, blockSize);
 				offset += blockSize;
 			}
+			int i;
+			for (i = 0; i < result.length; i++) {
+				if (result[i] == 0)
+					break;
+			}
+			result = Arrays.copyOfRange(result, 0, i);
 			return result;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -371,11 +378,11 @@ public class vPartition implements Serializable {
 		int counter = 0;
 		try {
 			while (idx != -1) {
-				System.out.println(idx);
 				writeBlock(firstDataBlock() + idx, data);
-				idx = fat.getNextBlock(idx);
+				int next = fat.getNextBlock(idx);
 				fat.deallocateBlock(idx);
-				counter += blockSize;
+				idx = next;
+				counter++;
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
