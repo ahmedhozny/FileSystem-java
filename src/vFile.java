@@ -1,8 +1,10 @@
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Objects;
 
+/**
+ * Represents a virtual file in the file system.
+ */
 public class vFile implements Serializable {
     private String name;
     private vDirectory location;

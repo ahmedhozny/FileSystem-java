@@ -1,26 +1,35 @@
-import java.io.File;
 import java.io.Serializable;
-import java.util.*;
 
+/**
+ * Represents the File Allocation Table (FAT) for tracking block allocation in a virtual partition.
+ * The FAT is a data structure that keeps track of which blocks are allocated or free.
+ */
 public class FileAllocationTable implements Serializable {
 	public final Integer[] blocks;
 
 	/**
-	 * Creates a new FileAllocationTable
-	 * Should be called only if new partition is created.
-	 * @param numBlocks: number of blocks on partition that are defined for data saving.
+	 * Creates a new FileAllocationTable for a specified number of blocks.
+	 * Should be called only if a new partition is created.
+	 *
+	 * @param numBlocks The number of blocks on the partition defined for data saving.
 	 */
 	public FileAllocationTable(int numBlocks) {
 		blocks = new Integer[numBlocks];
 	}
 
+	/**
+	 * Copy constructor to create a new FileAllocationTable based on an existing one.
+	 *
+	 * @param fat The existing FileAllocationTable to copy.
+	 */
 	public FileAllocationTable(FileAllocationTable fat) {
 		this.blocks = fat.blocks;
 	}
 
 	/**
-	 * Allocates new block.
-	 * @return : returns index of block found.
+	 * Allocates a new block in the FAT.
+	 *
+	 * @return The index of the allocated block, or -1 if no block is available.
 	 */
 	public int allocateBlock() {
 		for (int i = 0; i < blocks.length; i++) {
@@ -33,8 +42,9 @@ public class FileAllocationTable implements Serializable {
 	}
 
 	/**
-	 * Deallocates a block.
-	 * @param blockIndex: index of block to deallocate.
+	 * Deallocates a block in the FAT.
+	 *
+	 * @param blockIndex The index of the block to deallocate.
 	 */
 	public void deallocateBlock(int blockIndex) {
 		if (blockIndex >= 0 && blockIndex < blocks.length)
@@ -42,17 +52,20 @@ public class FileAllocationTable implements Serializable {
 	}
 
 	/**
-	 * Checks if block is allocated.
-	 * @param blockNumber: index of block.
-	 * @return : true if block is allocated, false if not.
+	 * Checks if a block is allocated in the FAT.
+	 *
+	 * @param blockNumber The index of the block to check.
+	 * @return True if the block is allocated, false if not.
 	 */
 	public boolean isBlockAllocated(int blockNumber) {
 		return blocks[blockNumber] != null;
 	}
 
 	/**
-	 * Gets next block from current block index.
-	 * @param blockIndex: index of block that needs to point to the next block.
+	 * Gets the index of the next block from the current block index.
+	 *
+	 * @param blockIndex The index of the current block.
+	 * @return The index of the next block, or null if not available.
 	 */
 	public Integer getNextBlock(int blockIndex) {
 		if (blockIndex >= 0 && blockIndex < blocks.length) {
@@ -63,9 +76,10 @@ public class FileAllocationTable implements Serializable {
 	}
 
 	/**
-	 * Sets next block of current block index to point to next block index.
-	 * @param blockIndex: index of block that needs to point to the next block.
-	 * @param nextBlock: index of block to be pointed to.
+	 * Sets the next block of the current block index to point to a specified next block index.
+	 *
+	 * @param blockIndex The index of the current block.
+	 * @param nextBlock  The index of the block to be pointed to.
 	 */
 	public void setNextBlock(int blockIndex, int nextBlock) {
 		if (blockIndex >= 0 && blockIndex < blocks.length) {
