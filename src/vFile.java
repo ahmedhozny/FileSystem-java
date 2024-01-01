@@ -2,25 +2,31 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Objects;
-import java.nio.file.attribute.FileTime;
 
 public class vFile implements Serializable {
     private String name;
     private vDirectory location;
     private String type;
     private long size;
+    private int startBlock;
     private int numOfBlocks;
     private byte protection;
-    private LocalDateTime creationTime;
+    private final LocalDateTime creationTime;
     private LocalDateTime modificationTime;
     private LocalDateTime accessTime;
 
+    public static int hash(String name, String type) {
+        String uniqueKey = name  + type;
+        return uniqueKey.hashCode();
+    }
+
     // Constructor
-    public vFile(String name, vDirectory location, String type) {
-        this.name = name;
-        this.location = location;
-        this.type = type;
+    public vFile(String name, String type, vDirectory location) {
+        setName(name);
+        setType(type);
+        setLocation(location);
         this.size = 0;
+        this.startBlock = -1;
         this.numOfBlocks = 0;
         this.protection = 0;
         this.creationTime = LocalDateTime.now();
@@ -55,10 +61,13 @@ public class vFile implements Serializable {
     }
 
     public void setType(String type) {
-        if (type != null && !type.isEmpty()) {
+        if (this instanceof vDirectory)
             this.type = type;
+        else if (type.length() <= 3) {
+            this.type = type;
+            this.setModificationTime(LocalDateTime.now());
         } else {
-            throw new IllegalArgumentException("Type must not be null or empty");
+            throw new IllegalArgumentException("Type must be 3 characters or less");
         }
     }
 
@@ -107,6 +116,7 @@ public class vFile implements Serializable {
     }
 
     public void setModificationTime(LocalDateTime modificationTime) {
+        setAccessTime(modificationTime);
         this.modificationTime = modificationTime;
     }
 
@@ -137,33 +147,28 @@ public class vFile implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
         if (obj == null || getClass() != obj.getClass())
             return false;
-        vFile vFile = (vFile) obj;
-        return name.equals(vFile.name);
+        vFile file = (vFile) obj;
+        if (this.hashCode() == obj.hashCode())
+            return true;
+	    return Objects.equals(this.name, file.name) && Objects.equals(this.type, file.type) && Objects.equals(this.location, file.location);
     }
 
     @Override
     public int hashCode() {
-        String uniqueKey = name + location + type;
-        return uniqueKey.hashCode();
+        return hash(name, type);
     }
 
-    public static void main(String[] args) {
-        HashMap<Integer, vFile> fileHashTable = new HashMap<>();
-
-        vDirectory directory = new vDirectory("ExampleDirectory");
-        vFile file1 = new vFile("File1", directory, "txt");
-        vFile file2 = new vFile("File2", directory, "pdf");
-
-        fileHashTable.put(file1.hashCode(), file1);
-        fileHashTable.put(file2.hashCode(), file2);
-
-        int fileIdToRetrieve = file1.hashCode();
-        vFile retrievedFile = fileHashTable.get(fileIdToRetrieve);
-
+    public int getStartBlock() {
+        return startBlock;
     }
 
+    public void setStartBlock(int startBlock) {
+        this.startBlock = startBlock;
+    }
+
+    public String getFullName() {
+        return name + (type == null ? "" : "." + type);
+    }
 }

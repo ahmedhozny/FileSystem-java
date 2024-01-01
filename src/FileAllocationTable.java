@@ -1,9 +1,9 @@
+import java.io.File;
 import java.io.Serializable;
 import java.util.*;
 
 public class FileAllocationTable implements Serializable {
-	private final Integer[] blocks;
-	private final Map<String, Integer> fileEntries;
+	public final Integer[] blocks;
 
 	/**
 	 * Creates a new FileAllocationTable
@@ -12,7 +12,10 @@ public class FileAllocationTable implements Serializable {
 	 */
 	public FileAllocationTable(int numBlocks) {
 		blocks = new Integer[numBlocks];
-		fileEntries = new HashMap<>();
+	}
+
+	public FileAllocationTable(FileAllocationTable fat) {
+		this.blocks = fat.blocks;
 	}
 
 	/**
@@ -21,7 +24,7 @@ public class FileAllocationTable implements Serializable {
 	 */
 	public int allocateBlock() {
 		for (int i = 0; i < blocks.length; i++) {
-			if (blocks[i] != null) {
+			if (blocks[i] == null) {
 				blocks[i] = -1;
 				return i;
 			}
@@ -68,25 +71,5 @@ public class FileAllocationTable implements Serializable {
 		if (blockIndex >= 0 && blockIndex < blocks.length) {
 			blocks[blockIndex] = nextBlock;
 		}
-	}
-
-	public void createEntry(String fileName, Integer startBlock) {
-		fileEntries.put(fileName, startBlock);
-	}
-
-	public Integer getFileStartBlock(String fileName) {
-		return fileEntries.getOrDefault(fileName, null);
-	}
-
-	public int deleteEntry(String fileName) {
-		int counter = 0;
-		Integer idx = fileEntries.getOrDefault(fileName, null);
-		while (idx != null && idx != -1) {
-			deallocateBlock(idx);
-			idx = blocks[idx];
-			counter++;
-		}
-		fileEntries.remove(fileName);
-		return counter;
 	}
 }
