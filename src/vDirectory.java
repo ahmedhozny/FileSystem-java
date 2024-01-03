@@ -108,7 +108,7 @@ public class vDirectory extends vFile implements Serializable {
 	public void printAllFiles() {
 		System.out.println("Files in " + this.getName() + " directory:");
 		for (vFile file : files) {
-			System.out.printf("%s\t\t%s\t\t%d\t\t%s\n", file.getModificationTime().format(DateTimeFormatter.ISO_DATE_TIME), file.getType() == null ? "<DIR>" : "     ", file.getSize(), file.getFullName());
+			System.out.printf("%s\t\t%s\t\t%s\t\t%d\t\t%s\n", file.getPermissionString(), file.getModificationTime().format(DateTimeFormatter.ISO_DATE_TIME), file.getType() == null ? "<DIR>" : "     ", file.getSize(), file.getFullName());
 		}
 	}
 }

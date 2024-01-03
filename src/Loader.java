@@ -60,7 +60,7 @@ public class Loader {
 					break;
 				case "delete":
 					if (args.length < 2)
-						System.out.println("Usage: use <partition label>.");
+						System.out.println("Usage: delete <partition label>.");
 					else if (args[1].length() != 1)
 						System.out.println("Partition label must be a single letter.");
 					else if (!vPartitions.containsKey(args[1].toUpperCase().charAt(0)))
@@ -70,9 +70,10 @@ public class Loader {
 						char label = args[1].toUpperCase().charAt(0);
 						File file = new File(vPartitions.remove(label).getUuid().toString() + ".vpar");
 						if (file.delete())
-							System.out.printf("Partition %c removed.\n", label);
+							System.out.printf("Partition %c deleted.\n", label);
 					}
 					break;
+
 				case "exit":
 					System.out.println("Bye!");
 					scanner.close();
@@ -88,6 +89,7 @@ public class Loader {
 		char label = partition.getPartitionLabel();
 		vDirectory current_folder = partition.getRoot();
 		System.out.printf("Partition %c selected%n", label);
+		super_loop:
 		while (true) {
 			System.out.printf("%s> ", partition.getPathString(current_folder));
 			String[] args = scanner.nextLine().split(" +");
@@ -246,8 +248,38 @@ public class Loader {
 							System.out.printf("File %s doesn't exist\n", args[1]);
 						else
 							System.out.println(file);
-						break;
 					}
+					break;
+				case "chmod":
+					if (args.length != 3) {
+						System.out.println("Usage: chmod <OPTION>... MODE[,MODE] <file_name>");
+					} else {
+						String permissions = args[1];
+						String fileName = args[2];
+						vFile file = current_folder.getFileByFullName(fileName);
+						if (file == null) {
+							System.out.printf("File %s doesn't exist\n", fileName);
+						} else {
+							List<Runnable> permissionCommands = new ArrayList<>();
+							boolean addPermission = permissions.charAt(0) == '+';
+							permissions = permissions.substring(1);
+							for (char permission : permissions.toCharArray()) {
+								switch (permission) {
+									case 'r' -> permissionCommands.add(() -> file.setReadPermission(addPermission));
+									case 'w' -> permissionCommands.add(() -> file.setWritePermission(addPermission));
+									case 'x' -> permissionCommands.add(() -> file.setExecutePermission(addPermission));
+									default -> {
+										System.out.println("Invalid permission character: " + permission);
+										continue super_loop;
+									}
+								}
+							}
+							permissionCommands.forEach(Runnable::run);
+							System.out.printf("Permissions for %s updated\n", fileName);
+						}
+					}
+					break;
+
 
 				case "exit":
 					System.out.println("Exiting to File System");

@@ -6,171 +6,238 @@ import java.util.Objects;
  * Represents a virtual file in the file system.
  */
 public class vFile implements Serializable {
-    private String name;
-    private vDirectory location;
-    private String type;
-    private long size;
-    private int startBlock;
-    private int numOfBlocks;
-    private byte protection;
-    private final LocalDateTime creationTime;
-    private LocalDateTime modificationTime;
-    private LocalDateTime accessTime;
+	// Constants for permission levels
+	public static final byte READ_PERMISSION = 4;       // 100 in binary
+	public static final byte WRITE_PERMISSION = 2;      // 010 in binary
+	public static final byte EXECUTE_PERMISSION = 1;    // 001 in binary
+	private String name;
+	private vDirectory location;
+	private String type;
+	private long size;
+	private int startBlock;
+	private int numOfBlocks;
+	private byte protection;
+	private final LocalDateTime creationTime;
+	private LocalDateTime modificationTime;
+	private LocalDateTime accessTime;
 
-    public static int hash(String name, String type) {
-        String uniqueKey = name  + type;
-        return uniqueKey.hashCode();
-    }
+	public static int hash(String name, String type) {
+		String uniqueKey = name  + type;
+		return uniqueKey.hashCode();
+	}
 
-    // Constructor
-    public vFile(String name, String type, vDirectory location) {
-        setName(name);
-        setType(type);
-        setLocation(location);
-        this.size = 0;
-        this.startBlock = -1;
-        this.numOfBlocks = 0;
-        this.protection = 0;
-        this.creationTime = LocalDateTime.now();
-        this.modificationTime = this.creationTime;
-        this.accessTime = this.creationTime;
-    }
+	// Constructor
+	public vFile(String name, String type, vDirectory location) {
+		setName(name);
+		setType(type);
+		setLocation(location);
+		this.size = 0;
+		this.startBlock = -1;
+		this.numOfBlocks = 0;
+		this.protection = 0;
+		this.creationTime = LocalDateTime.now();
+		this.modificationTime = this.creationTime;
+		this.accessTime = this.creationTime;
+	}
 
-    // Getters and Setters
-    public String getName() {
-        return name;
-    }
+	// Setters
+	public void setName(String name) {
+		if (name.length() <= 9) {
+			this.name = name;
+			this.setModificationTime(LocalDateTime.now());
+		} else {
+			throw new IllegalArgumentException("Name must be 9 characters or less");
+		}
+	}
 
-    public void setName(String name) {
-        if (name.length() <= 9) {
-            this.name = name;
-            this.setModificationTime(LocalDateTime.now());
-        } else {
-            throw new IllegalArgumentException("Name must be 9 characters or less");
-        }
-    }
+	public void setLocation(vDirectory location) {
+		this.location = location;
+	}
 
-    public vDirectory getLocation() {
-        return location;
-    }
+	public void setType(String type) {
+		if (this instanceof vDirectory || type.length() <= 3) {
+			this.type = type;
+			this.setModificationTime(LocalDateTime.now());
+		} else {
+			throw new IllegalArgumentException("Type must be 3 characters or less");
+		}
+	}
 
-    public void setLocation(vDirectory location) {
-        this.location = location;
-    }
+	public void setSize(long size) {
+		if (size < 0)
+			throw new IllegalArgumentException("Size must be non-negative");
+		this.size = size;
+	}
 
-    public String getType() {
-        return type;
-    }
+	public void setNumOfBlocks(int numOfBlocks) {
+		if (numOfBlocks >= 0) {
+			this.numOfBlocks = numOfBlocks;
+		} else {
+			throw new IllegalArgumentException("Number of blocks must be non-negative");
+		}
+	}
 
-    public void setType(String type) {
-        if (this instanceof vDirectory)
-            this.type = type;
-        else if (type.length() <= 3) {
-            this.type = type;
-            this.setModificationTime(LocalDateTime.now());
-        } else {
-            throw new IllegalArgumentException("Type must be 3 characters or less");
-        }
-    }
+	public void setProtection(byte protection) {
+		if (protection >= 0 && protection <= 127) {
+			this.protection = protection;
+		} else {
+			throw new IllegalArgumentException("Invalid protection value");
+		}
+	}
 
-    public long getSize() {
-        return size;
-    }
+	/**
+	 * Set read permission for the file.
+	 * @param read true to set read permission, false to unset.
+	 */
+	public void setReadPermission(boolean read) {
+		if (read) {
+			protection |= READ_PERMISSION;
+		} else {
+			protection &= ~READ_PERMISSION;
+		}
+	}
 
-    public void setSize(long size) {
-        if (size >= 0) {
-            this.size = size;
-        } else {
-            throw new IllegalArgumentException("Size must be non-negative");
-        }
-    }
+	/**
+	 * Set write permission for the file.
+	 * @param write true to set write permission, false to unset.
+	 */
+	public void setWritePermission(boolean write) {
+		if (write) {
+			protection |= WRITE_PERMISSION;
+		} else {
+			protection &= ~WRITE_PERMISSION;
+		}
+	}
 
-    public int getNumOfBlocks() {
-        return numOfBlocks;
-    }
+	/**
+	 * Set execute permission for the file.
+	 * @param execute true to set execute permission, false to unset.
+	 */
+	public void setExecutePermission(boolean execute) {
+		if (execute) {
+			protection |= EXECUTE_PERMISSION;
+		} else {
+			protection &= ~EXECUTE_PERMISSION;
+		}
+	}
 
-    public void setNumOfBlocks(int numOfBlocks) {
-        if (numOfBlocks >= 0) {
-            this.numOfBlocks = numOfBlocks;
-        } else {
-            throw new IllegalArgumentException("Number of blocks must be non-negative");
-        }
-    }
+	/**
+	 * Set permissions for the file.
+	 * @param read    true to set read permission, false to unset.
+	 * @param write   true to set write permission, false to unset.
+	 * @param execute true to set execute permission, false to unset.
+	 */
+	public void setPermissions(boolean read, boolean write, boolean execute) {
+		setReadPermission(read);
+		setWritePermission(write);
+		setExecutePermission(execute);
+	}
 
-    public byte getProtection() {
-        return protection;
-    }
+	public void setModificationTime(LocalDateTime modificationTime) {
+		setAccessTime(modificationTime);
+		this.modificationTime = modificationTime;
+	}
 
-    public void setProtection(byte protection) {
-        if (protection >= 0 && protection <= 127) {
-            this.protection = protection;
-        } else {
-            throw new IllegalArgumentException("Invalid protection value");
-        }
-    }
+	public void setAccessTime(LocalDateTime accessTime) {
+		this.accessTime = accessTime;
+	}
 
-    public LocalDateTime getCreationTime() {
-        return creationTime;
-    }
+	public void setStartBlock(int startBlock) {
+		this.startBlock = startBlock;
+	}
 
-    public LocalDateTime getModificationTime() {
-        return modificationTime;
-    }
+	// Getters
+	public String getName() {
+		return name;
+	}
 
-    public void setModificationTime(LocalDateTime modificationTime) {
-        setAccessTime(modificationTime);
-        this.modificationTime = modificationTime;
-    }
+	public vDirectory getLocation() {
+		return location;
+	}
 
-    public LocalDateTime getAccessTime() {
-        return accessTime;
-    }
+	public String getType() {
+		return type;
+	}
 
-    public void setAccessTime(LocalDateTime accessTime) {
-        this.accessTime = accessTime;
-    }
+	public long getSize() {
+		return size;
+	}
 
-    // Override toString, equals, and hashCode methods...
-    @Override
-    public String toString() {
-        return "vFile{" +
-                "name='" + name + '\'' +
-                ", identifier=" + hashCode() +
-                ", location=" + location +
-                ", type='" + type + '\'' +
-                ", size=" + size +
-                ", numOfBlocks=" + numOfBlocks +
-                ", protection=" + protection +
-                ", creationTime=" + creationTime +
-                ", modificationTime=" + modificationTime +
-                ", accessTime=" + accessTime +
-                '}';
-    }
+	public int getNumOfBlocks() {
+		return numOfBlocks;
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null || getClass() != obj.getClass())
-            return false;
-        vFile file = (vFile) obj;
-        if (this.hashCode() == obj.hashCode())
-            return true;
-	    return Objects.equals(this.name, file.name) && Objects.equals(this.type, file.type) && Objects.equals(this.location, file.location);
-    }
+	public boolean hasReadPermission() {
+		return (protection & READ_PERMISSION) == READ_PERMISSION;
+	}
+	public boolean hasWritePermission() {
+		return (protection & WRITE_PERMISSION) == WRITE_PERMISSION;
+	}
 
-    @Override
-    public int hashCode() {
-        return hash(name, type);
-    }
+	public boolean hasExecutePermission() {
+		return (protection & EXECUTE_PERMISSION) == EXECUTE_PERMISSION;
+	}
 
-    public int getStartBlock() {
-        return startBlock;
-    }
+	public String getPermissionString() {
+		StringBuilder permissionString = new StringBuilder();
 
-    public void setStartBlock(int startBlock) {
-        this.startBlock = startBlock;
-    }
+		for (int i = 2; i >= 0; i--) {
+			char permission = ((protection >> i) & 1) == 1 ? "rwx".charAt(2 - i) : '-';
+			permissionString.append(permission);
+		}
 
-    public String getFullName() {
-        return name + (type == null ? "" : "." + type);
-    }
+		return permissionString.toString();
+	}
+
+	public LocalDateTime getCreationTime() {
+		return creationTime;
+	}
+
+	public LocalDateTime getModificationTime() {
+		return modificationTime;
+	}
+
+	public LocalDateTime getAccessTime() {
+		return accessTime;
+	}
+
+	public int getStartBlock() {
+		return startBlock;
+	}
+
+	public String getFullName() {
+		return name + (type == null ? "" : "." + type);
+	}
+
+	// Override toString, equals, and hashCode methods...
+	@Override
+	public String toString() {
+		return "vFile{" +
+				"name='" + name + '\'' +
+				", identifier=" + hashCode() +
+				", location=" + location +
+				", type='" + type + '\'' +
+				", size=" + size +
+				", numOfBlocks=" + numOfBlocks +
+				", protection=" + protection +
+				", creationTime=" + creationTime +
+				", modificationTime=" + modificationTime +
+				", accessTime=" + accessTime +
+				'}';
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null || getClass() != obj.getClass())
+			return false;
+		vFile file = (vFile) obj;
+		if (this.hashCode() == obj.hashCode())
+			return true;
+		return Objects.equals(this.name, file.name) && Objects.equals(this.type, file.type) && Objects.equals(this.location, file.location);
+	}
+
+	@Override
+	public int hashCode() {
+		return hash(name, type);
+	}
 }
