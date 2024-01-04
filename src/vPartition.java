@@ -659,18 +659,6 @@ public class vPartition implements Serializable {
 		return partitionLabel;
 	}
 
-	public long getPartitionSize() {
-		return partitionSize;
-	}
-
-	public long getUsedSpace() {
-		return usedSpace;
-	}
-
-	public long getFreeSpace() {
-		return freeSpace;
-	}
-
 	public UUID getUuid() {
 		return uuid;
 	}

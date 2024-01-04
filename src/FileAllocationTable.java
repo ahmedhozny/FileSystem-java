@@ -53,16 +53,6 @@ public class FileAllocationTable implements Serializable {
 	}
 
 	/**
-	 * Checks if a block is allocated in the FAT.
-	 *
-	 * @param blockNumber The index of the block to check.
-	 * @return True if the block is allocated, false if not.
-	 */
-	public boolean isBlockAllocated(int blockNumber) {
-		return blocks[blockNumber] != null;
-	}
-
-	/**
 	 * Gets the index of the next block from the current block index.
 	 *
 	 * @param blockIndex The index of the current block.

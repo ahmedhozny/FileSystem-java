@@ -53,13 +53,6 @@ public class vDirectory extends vFile implements Serializable {
 		return null;
 	}
 
-	public void destruct() {
-		for (vFile file: files) {
-			if (file instanceof vDirectory)
-				((vDirectory) file).destruct();
-			files.remove(file);
-		}
-	}
 	/**
 	 * Deletes an entry (file or subdirectory) from the directory.
 	 * @param file vFile instance to delete

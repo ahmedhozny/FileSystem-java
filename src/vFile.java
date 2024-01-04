@@ -137,16 +137,8 @@ public class vFile implements Serializable {
 		return location;
 	}
 
-	public String getType() {
-		return type;
-	}
-
 	public long getSize() {
 		return size;
-	}
-
-	public int getNumOfBlocks() {
-		return numOfBlocks;
 	}
 
 	public boolean hasReadPermission() {
@@ -154,10 +146,6 @@ public class vFile implements Serializable {
 	}
 	public boolean hasWritePermission() {
 		return (protection & WRITE_PERMISSION) == WRITE_PERMISSION;
-	}
-
-	public boolean hasExecutePermission() {
-		return (protection & EXECUTE_PERMISSION) == EXECUTE_PERMISSION;
 	}
 
 	/**
@@ -204,12 +192,13 @@ public class vFile implements Serializable {
 		return String.format("""
 						File: %s.%s
 						Size: %d bytes
+						Number of blocks: %d
 						Permissions: %s
 						Location: %s
 						Created: %s
 						Last Accessed: %s
 						Last Modified: %s""",
-				name, type, size, getPermissionString(), location.getName(), dateFormat.format(creationTime), dateFormat.format(accessTime), dateFormat.format(modificationTime));
+				name, type, size, numOfBlocks, getPermissionString(), location.getName(), dateFormat.format(creationTime), dateFormat.format(accessTime), dateFormat.format(modificationTime));
 	}
 
 	@Override
