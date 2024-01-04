@@ -25,27 +25,24 @@ public class vPartition implements Serializable {
 	 * @param uuid_string UUID of the partition
 	 * @throws FileNotFoundException if the partition file is not found
 	 */
-	public vPartition(String uuid_string) throws FileNotFoundException {
+	public vPartition(String uuid_string) throws IOException, ClassNotFoundException {
 		String filePath = "%s.vpar".formatted(uuid_string);
 		File file = new File(filePath);
 		if (!file.isFile())
 			throw new FileNotFoundException(filePath);
-		try {
-			this.partitionHead = new RandomAccessFile(file, "rw");
-			try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(readBlock(0)))) {
-				vPartition deserialized = (vPartition) ois.readObject();
-				this.uuid = deserialized.uuid;
-				this.partitionLabel = deserialized.partitionLabel;
-				this.partitionSize = deserialized.partitionSize;
-				this.usedSpace = deserialized.usedSpace;
-				this.freeSpace = deserialized.freeSpace;
-			}
-
-			this.fat = new FileAllocationTable(deserializeFat());
-			this.rootFolder = new vDirectory(deserializeRoot());
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+		this.partitionHead = new RandomAccessFile(file, "rw");
+		try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(readBlock(0)))) {
+			vPartition deserialized = (vPartition) ois.readObject();
+			this.uuid = deserialized.uuid;
+			this.partitionLabel = deserialized.partitionLabel;
+			this.partitionSize = deserialized.partitionSize;
+			this.usedSpace = deserialized.usedSpace;
+			this.freeSpace = deserialized.freeSpace;
 		}
+
+		this.fat = new FileAllocationTable(deserializeFat());
+		this.rootFolder = new vDirectory(deserializeRoot());
+
 	}
 
 	/**
@@ -61,21 +58,16 @@ public class vPartition implements Serializable {
 
 		if (partitionSize <= 262144)
 			throw new Exception("A partition must have at least 256KB of total space");
-		try {
-			this.partitionHead = new RandomAccessFile(file, "rw");
-			this.partitionHead.setLength(partitionSize);
-			this.partitionLabel = driveLabel >= 97 ? (char) (driveLabel - 32) : driveLabel;
-			this.partitionSize = partitionSize;
-			this.fat = new FileAllocationTable((int) Math.ceilDiv(partitionSize, blockSize) - firstDataBlock());
-			this.rootFolder = new vDirectory("~", null);
-			this.usedSpace = (long) firstDataBlock() * blockSize;
-			this.freeSpace = partitionSize - this.usedSpace;
+		this.partitionHead = new RandomAccessFile(file, "rw");
+		this.partitionHead.setLength(partitionSize);
+		this.partitionLabel = driveLabel >= 97 ? (char) (driveLabel - 32) : driveLabel;
+		this.partitionSize = partitionSize;
+		this.fat = new FileAllocationTable((int) Math.ceilDiv(partitionSize, blockSize) - firstDataBlock());
+		this.rootFolder = new vDirectory("~", null);
+		this.usedSpace = (long) firstDataBlock() * blockSize;
+		this.freeSpace = partitionSize - this.usedSpace;
 
-			save();
-
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		save();
 	}
 
 	/**
@@ -130,23 +122,16 @@ public class vPartition implements Serializable {
 	 *
 	 * @return FileAllocationTable instance
 	 */
-	public FileAllocationTable deserializeFat() {
+	public FileAllocationTable deserializeFat() throws IOException, ClassNotFoundException {
 		byte[] obj = new byte[blockSize * blocksPerFat];
-
-		try {
-			for (int i = 0; i < blocksPerFat; i++) {
-				byte[] chunk = readBlock(i + bootSize);
-				System.arraycopy(chunk, 0, obj, i * blockSize, chunk.length);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		for (int i = 0; i < blocksPerFat; i++) {
+			byte[] chunk = readBlock(i + bootSize);
+			System.arraycopy(chunk, 0, obj, i * blockSize, chunk.length);
 		}
 
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(obj);
 		     ObjectInputStream ois = new ObjectInputStream(bais)) {
 			return (FileAllocationTable) ois.readObject();
-		} catch (IOException | ClassNotFoundException e) {
-			throw new RuntimeException(e);
 		}
 	}
 
@@ -156,26 +141,27 @@ public class vPartition implements Serializable {
 	 *
 	 * @return vDirectory instance
 	 */
-	public vDirectory deserializeRoot() {
+	public vDirectory deserializeRoot() throws IOException, ClassNotFoundException {
 		byte[] obj = new byte[blockSize * blocksPerRoot];
 
-		try {
-			for (int i = 0; i < blocksPerRoot; i++) {
-				byte[] chunk = readBlock(i + bootSize + blocksPerFat);
-				System.arraycopy(chunk, 0, obj, i * blockSize, chunk.length);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		for (int i = 0; i < blocksPerRoot; i++) {
+			byte[] chunk = readBlock(i + bootSize + blocksPerFat);
+			System.arraycopy(chunk, 0, obj, i * blockSize, chunk.length);
 		}
 
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(obj);
 		     ObjectInputStream ois = new ObjectInputStream(bais)) {
 			return (vDirectory) ois.readObject();
-		} catch (IOException | ClassNotFoundException e) {
-			throw new RuntimeException(e);
 		}
 	}
 
+	public void forceUnmount() {
+		try {
+			this.partitionHead.close();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 	/**
 	 * Creates a new vFile instance
 	 */
@@ -191,15 +177,12 @@ public class vPartition implements Serializable {
 	 * Deletes a file from the specified directory.
 	 *
 	 * @param directory:  vDirectory instance
-	 * @param fileName:   name of the file to be deleted
-	 * @param fileType:   type of the file to be deleted
+	 * @param file:  file to be deleted
 	 * @throws IllegalArgumentException if the file doesn't exist
 	 */
-	public void deleteFile(vDirectory directory, String fileName, String fileType) {
-		vFile file = directory.getFileByNameAndType(fileName, fileType);
+	public void deleteFile(vDirectory directory, vFile file) {
 		if (file == null)
 			throw new IllegalArgumentException("File doesn't exists");
-
 		long n_blocks = deleteFileData(directory, file);
 		directory.deleteEntry(file);
 		usedSpace -= n_blocks * blockSize;
@@ -242,6 +225,8 @@ public class vPartition implements Serializable {
 			throw new IllegalArgumentException("File doesn't exists");
 
 		byte[] data = getFileData(sourceDir, sourceFile);
+		if (destFile.isEmpty())
+			destFile = sourceFile.getFullName();
 		String[] arr = destFile.split("\\.", 2);
 		saveFileData(destDir, createFile(destDir, arr[0], arr[1]), data);
 	}
@@ -280,6 +265,8 @@ public class vPartition implements Serializable {
 	 * @return byte array containing content of the vFile
 	 */
 	public byte[] getFileData(vDirectory directory, vFile file) {
+		if (!file.hasReadPermission())
+			throw new SecurityException("File is read protected");
 		try {
 			Integer idx = directory.getFileStartBlock(file);
 			if (idx == null) {
@@ -325,6 +312,8 @@ public class vPartition implements Serializable {
 	 * @param data:      byte array containing content of vFile
 	 */
 	public void saveFileData(vDirectory directory, vFile file, byte[] data) {
+		if (!file.hasWritePermission())
+			throw new SecurityException("File is write protected.");
 		if (directory.getFileStartBlock(file) != - 1) {
 			long n_blocks = deleteFileData(directory, file);
 			directory.deleteEntry(file);
@@ -332,8 +321,10 @@ public class vPartition implements Serializable {
 			freeSpace += n_blocks * blockSize;
 		}
 
-		if (data.length == 0)
+		if (data.length == 0) {
 			directory.createEntry(file, -1);
+			return;
+		}
 		int[] allocatedBlocks = new int[Math.ceilDiv(data.length, blockSize)];
 		file.setSize(data.length);
 		file.setNumOfBlocks(allocatedBlocks.length);
@@ -396,14 +387,13 @@ public class vPartition implements Serializable {
 	 *
 	 * @param path The full path of the directory, including the partition label.
 	 * @return The vDirectory instance corresponding to the specified path.
-	 * @throws IllegalArgumentException If the path format is invalid.
 	 */
 	public vDirectory getDirectoryByPath(String path) {
-		if (!path.matches("^(?i)%c:/.*$".formatted(partitionLabel))) {
-			throw new IllegalArgumentException("Invalid path format");
+		if (!path.matches("^/.*$")) {
+			return null;
 		}
 
-		String[] pathElements = path.substring(3).split("/");
+		String[] pathElements = path.split("/");
 
 		vDirectory currentDirectory = rootFolder;
 
@@ -467,9 +457,10 @@ public class vPartition implements Serializable {
 	@Override
 	public String toString() {
 		return "vPartition [" + partitionLabel +
-				"]\nuuid = " + uuid +
-				"\npartitionSize = " + partitionSize +
-				" Bytes\nusedSpace = " + usedSpace +
+				"]\nUUID = " + uuid +
+				"\nPartition Size = " + partitionSize +
+				" Bytes\nTotal Used Space = " + usedSpace +
+				" Bytes\nUsed Space (System excluded) = " + (usedSpace - ((long) firstDataBlock() * blockSize)) +
 				" Bytes\nfreeSpace = " + freeSpace +
 				" Bytes\n";
 	}

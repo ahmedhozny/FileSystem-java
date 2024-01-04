@@ -34,7 +34,7 @@ public class vFile implements Serializable {
 		this.size = 0;
 		this.startBlock = -1;
 		this.numOfBlocks = 0;
-		this.protection = 0;
+		this.protection = READ_PERMISSION + WRITE_PERMISSION;
 		this.creationTime = LocalDateTime.now();
 		this.modificationTime = this.creationTime;
 		this.accessTime = this.creationTime;
@@ -77,14 +77,6 @@ public class vFile implements Serializable {
 		}
 	}
 
-	public void setProtection(byte protection) {
-		if (protection >= 0 && protection <= 127) {
-			this.protection = protection;
-		} else {
-			throw new IllegalArgumentException("Invalid protection value");
-		}
-	}
-
 	/**
 	 * Set read permission for the file.
 	 * @param read true to set read permission, false to unset.
@@ -119,18 +111,6 @@ public class vFile implements Serializable {
 		} else {
 			protection &= ~EXECUTE_PERMISSION;
 		}
-	}
-
-	/**
-	 * Set permissions for the file.
-	 * @param read    true to set read permission, false to unset.
-	 * @param write   true to set write permission, false to unset.
-	 * @param execute true to set execute permission, false to unset.
-	 */
-	public void setPermissions(boolean read, boolean write, boolean execute) {
-		setReadPermission(read);
-		setWritePermission(write);
-		setExecutePermission(execute);
 	}
 
 	public void setModificationTime(LocalDateTime modificationTime) {
@@ -212,18 +192,15 @@ public class vFile implements Serializable {
 	// Override toString, equals, and hashCode methods...
 	@Override
 	public String toString() {
-		return "vFile{" +
-				"name='" + name + '\'' +
-				", identifier=" + hashCode() +
-				", location=" + location +
-				", type='" + type + '\'' +
-				", size=" + size +
-				", numOfBlocks=" + numOfBlocks +
-				", protection=" + protection +
-				", creationTime=" + creationTime +
-				", modificationTime=" + modificationTime +
-				", accessTime=" + accessTime +
-				'}';
+		return String.format("""
+						File: %s.%s
+						Size: %d bytes
+						Permissions: %s
+						Location: %s
+						Created: %s
+						Last Accessed: %s
+						Last Modified: %s""",
+				name, type, size, getPermissionString(), location.getName(), creationTime, accessTime, modificationTime);
 	}
 
 	@Override

@@ -30,6 +30,7 @@ public class FileAllocationTable implements Serializable {
 	 * Allocates a new block in the FAT.
 	 *
 	 * @return The index of the allocated block, or -1 if no block is available.
+	 * @throws RuntimeException: if no deallocated block is found.
 	 */
 	public int allocateBlock() {
 		for (int i = 0; i < blocks.length; i++) {
@@ -38,7 +39,7 @@ public class FileAllocationTable implements Serializable {
 				return i;
 			}
 		}
-		return -1;
+		throw new RuntimeException("Couldn't allocate more space. Partition is full.");
 	}
 
 	/**

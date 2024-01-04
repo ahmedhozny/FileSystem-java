@@ -102,6 +102,15 @@ public class vDirectory extends vFile implements Serializable {
 		return null;
 	}
 
+	public String toString() {
+		return "Directory: " + getName() + "\n" +
+				String.format("Size: %d bytes\n", getSize()) +
+				String.format("Permissions: %s\n", getPermissionString()) +
+				String.format("Created: %s\n", getCreationTime()) +
+				String.format("Last Modified: %s\n", getModificationTime()) +
+				String.format("Last Accessed: %s\n", getAccessTime());
+	}
+
 	/**
 	 * Prints information about all files and subdirectories in the directory.
 	 */
