@@ -1,5 +1,4 @@
 import java.io.Serializable;
-import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -138,16 +137,26 @@ public class vDirectory extends vFile implements Serializable {
 		}
 	}
 
+	/**
+	 * Prints information about files matching the search criteria.
+	 *
+	 * @param search The string to search for in file names.
+	 */
 	public void printSomeFiles(String search) {
+		// List to store files matching the search criteria
 		List<vFile> found = new LinkedList<>();
+
+		// Iterate through files to find matches
 		for (vFile file : files) {
 			if (file.getFullName().contains(search))
 				found.add(file);
 		}
 
+		// Check if any files match the search criteria
 		if (found.isEmpty())
 			System.out.println("No files match the search criteria.");
 		else {
+			// Print information about matching files
 			for (vFile file : found) {
 				if (file instanceof vDirectory)
 					System.out.printf("%s\t\t%s\t\t%s\t\t%s\t\t%s\n", file.getPermissionString(), file.getModificationTime(), "<DIR>", "", file.getFullName());

@@ -7,11 +7,12 @@ import java.util.Objects;
  * Represents a virtual file in the file system.
  */
 public class vFile implements Serializable {
+	// Date and time formatter for consistent formatting
+	public static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 	// Constants for permission levels
 	public static final byte READ_PERMISSION = 4;       // 100 in binary
 	public static final byte WRITE_PERMISSION = 2;      // 010 in binary
 	public static final byte EXECUTE_PERMISSION = 1;    // 001 in binary
-	public static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 	private String name;
 	private vDirectory location;
 	private String type;
@@ -23,6 +24,7 @@ public class vFile implements Serializable {
 	private LocalDateTime modificationTime;
 	private LocalDateTime accessTime;
 
+	// Static method to calculate a hash based on name and type
 	public static int hash(String name, String type) {
 		String uniqueKey = name  + type;
 		return uniqueKey.hashCode();
@@ -158,11 +160,18 @@ public class vFile implements Serializable {
 		return (protection & EXECUTE_PERMISSION) == EXECUTE_PERMISSION;
 	}
 
+	/**
+	 * Gets a string representation of the file's permissions.
+	 *
+	 * @return A string representing the file's permissions in the format "rwx".
+	 */
 	public String getPermissionString() {
 		StringBuilder permissionString = new StringBuilder();
-
+		// Iterate over permission bits (r, w, x) from left to right
 		for (int i = 2; i >= 0; i--) {
+			// Check if the corresponding permission bit is set
 			char permission = ((protection >> i) & 1) == 1 ? "rwx".charAt(2 - i) : '-';
+			// Append the permission character to the StringBuilder
 			permissionString.append(permission);
 		}
 
