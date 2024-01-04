@@ -107,7 +107,7 @@ public class Loader {
 	 */
 	public static void partitionLooper(vPartition partition) throws IOException {
 		char label = partition.getPartitionLabel(); // Get the label of the current partition
-		vDirectory current_folder = partition.getRoot(); // Set the current folder to the root of the partition
+		vFolder current_folder = partition.getRoot(); // Set the current folder to the root of the partition
 		System.out.printf("Partition %c selected%n", label);
 
 		// Main loop for user interaction within the partition
@@ -207,8 +207,8 @@ public class Loader {
 								break;
 							}
 							try {
-								vDirectory folder = current_folder.getSubFolderByName(args[1]);
-								folder = folder == null && args[1].matches("^/.*$")? partition.getDirectoryByPath(args[1]) : folder;
+								vFolder folder = current_folder.getSubFolderByName(args[1]);
+								folder = folder == null && args[1].matches("^/.*$")? partition.getFolderByPath(args[1]) : folder;
 								if (folder == null)
 									System.out.println("Folder doesn't exist");
 								else
@@ -231,7 +231,7 @@ public class Loader {
 								System.out.printf("File %s doesn't exist\n", sourceFilePath);
 								break;
 							}
-							vDirectory destDirectory = getFolder(current_folder, partition, destinationFilePath);
+							vFolder destDirectory = getFolder(current_folder, partition, destinationFilePath);
 							if (destDirectory == null) {
 								System.out.printf("Folder %s doesn't exist\n", destinationFilePath);
 								break;
@@ -254,7 +254,7 @@ public class Loader {
 								System.out.printf("File %s doesn't exist\n", sourceFilePath);
 								break;
 							}
-							vDirectory destDirectory = getFolder(current_folder, partition, destinationFilePath);
+							vFolder destDirectory = getFolder(current_folder, partition, destinationFilePath);
 							if (destDirectory == null) {
 								System.out.printf("Folder %s doesn't exist\n", destinationFilePath);
 								break;
@@ -360,17 +360,17 @@ public class Loader {
 	 * @param path: The path of the file to retrieve
 	 * @return vFile object corresponding to the specified path, or null if not found
 	 */
-	private static vFile getFile(vDirectory currentFolder, vPartition partition, String path) {
+	private static vFile getFile(vFolder currentFolder, vPartition partition, String path) {
 		// Initialize a variable to hold the resulting vFile object
 		vFile file = null;
 
-		// Check if the path is an absolute path (starts with '/')
+		// Check if the path is an absolute path
 		if (!path.matches("^/.*$")) {
 			// If the path is not absolute, directly retrieve the file from the current folder
 			file = currentFolder.getFileByFullName(path);
 		} else {
 			// If the path is absolute, extract the directory and file name
-			vDirectory directory = getFolder(currentFolder, partition, path);
+			vFolder directory = getFolder(currentFolder, partition, path);
 			// Check if the directory exists
 			if (directory != null) {
 				// Retrieve the file from the specified directory
@@ -388,15 +388,15 @@ public class Loader {
 	 * @param path: The path of the directory to retrieve
 	 * @return vDirectory object corresponding to the specified path, or the current folder if the path is not absolute
 	 */
-	private static vDirectory getFolder(vDirectory currentFolder, vPartition partition, String path) {
-		// Check if the path is not absolute (does not start with '/')
+	private static vFolder getFolder(vFolder currentFolder, vPartition partition, String path) {
+		// Check if the path is not absolute
 		if (!path.matches("^/.*$")) {
 			// If the path is not absolute, return the current folder
 			return currentFolder;
 		} else {
 			// Retrieve the directory from the specified path in the partition
 			String dir_name = path.substring(0, path.lastIndexOf("/"));
-			return partition.getDirectoryByPath(dir_name);
+			return partition.getFolderByPath(dir_name);
 		}
 	}
 }

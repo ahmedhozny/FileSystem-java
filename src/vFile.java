@@ -14,7 +14,7 @@ public class vFile implements Serializable {
 	public static final byte WRITE_PERMISSION = 2;      // 010 in binary
 	public static final byte EXECUTE_PERMISSION = 1;    // 001 in binary
 	private String name;
-	private vDirectory location;
+	private vFolder location;
 	private String type;
 	private long size;
 	private int startBlock;
@@ -31,7 +31,7 @@ public class vFile implements Serializable {
 	}
 
 	// Constructor
-	public vFile(String name, String type, vDirectory location) {
+	public vFile(String name, String type, vFolder location) {
 		setName(name);
 		setType(type);
 		setLocation(location);
@@ -52,12 +52,12 @@ public class vFile implements Serializable {
 		this.setModificationTime(LocalDateTime.now());
 	}
 
-	public void setLocation(vDirectory location) {
+	public void setLocation(vFolder location) {
 		this.location = location;
 	}
 
 	public void setType(String type) {
-		if (this instanceof vDirectory || type.length() <= 3) {
+		if (this instanceof vFolder || type.length() <= 3) {
 			this.type = type;
 			this.setModificationTime(LocalDateTime.now());
 		} else {
@@ -133,7 +133,7 @@ public class vFile implements Serializable {
 		return name;
 	}
 
-	public vDirectory getLocation() {
+	public vFolder getLocation() {
 		return location;
 	}
 
