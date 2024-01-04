@@ -203,11 +203,13 @@ public class vPartition implements Serializable {
 		if (startBlock == null)
 			throw new IllegalArgumentException("File not found");
 
+		if (destFile.isEmpty())
+			destFile = sourceFile.getFullName();
 		String[] arr = destFile.split("\\.", 2);
-		sourceDir.deleteEntry(sourceFile);
 		sourceFile.setName(arr[0]);
 		sourceFile.setType(arr[1]);
 		sourceFile.setLocation(destDir);
+		sourceDir.deleteEntry(sourceFile);
 		destDir.createEntry(sourceFile, sourceFile.getStartBlock());
 	}
 
@@ -255,6 +257,7 @@ public class vPartition implements Serializable {
 		vDirectory folder = parent.getSubFolderByName(folderName);
 		if (folder == null)
 			throw new IllegalArgumentException("Folder doesn't exists");
+		deleteFolderChildren(folder);
 		parent.deleteEntry(folder);
 	}
 
@@ -381,6 +384,20 @@ public class vPartition implements Serializable {
 		return counter;
 	}
 
+	public void deleteFolderChildren(vDirectory folder) {
+		// Create a copy of the list to avoid ConcurrentModificationException
+		List<vFile> filesCopy = new ArrayList<>(folder.getFiles());
+
+		// Iterate over the copied list
+		for (vFile file : filesCopy) {
+			if (file instanceof vDirectory) {
+				deleteFolderChildren((vDirectory) file);
+				folder.deleteEntry(file);
+			} else {
+				deleteFile(folder, file);
+			}
+		}
+	}
 	/**
 	 * Retrieves the vDirectory instance corresponding to the specified path.
 	 * The path should be in the format "%c:/folder1/folder2/.../folderN".

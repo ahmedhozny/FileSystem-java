@@ -1,6 +1,8 @@
 import java.io.Serializable;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -15,6 +17,8 @@ public class vDirectory extends vFile implements Serializable {
 	 */
 	public vDirectory(String name, vDirectory location) {
 		super(name, null, location);
+		if (Objects.equals(name, ".") || Objects.equals(name, ".."))
+			System.out.println();
 		this.files = new HashSet<>();
 	}
 
@@ -50,6 +54,13 @@ public class vDirectory extends vFile implements Serializable {
 		return null;
 	}
 
+	public void destruct() {
+		for (vFile file: files) {
+			if (file instanceof vDirectory)
+				((vDirectory) file).destruct();
+			files.remove(file);
+		}
+	}
 	/**
 	 * Deletes an entry (file or subdirectory) from the directory.
 	 * @param file vFile instance to delete
@@ -103,8 +114,11 @@ public class vDirectory extends vFile implements Serializable {
 	}
 
 	public String toString() {
+		long size = 0;
+		for (vFile file: files)
+			size += file.getSize();
 		return "Directory: " + getName() + "\n" +
-				String.format("Size: %d bytes\n", getSize()) +
+				String.format("Size: %d bytes\n", size) +
 				String.format("Permissions: %s\n", getPermissionString()) +
 				String.format("Created: %s\n", getCreationTime()) +
 				String.format("Last Modified: %s\n", getModificationTime()) +
@@ -117,7 +131,33 @@ public class vDirectory extends vFile implements Serializable {
 	public void printAllFiles() {
 		System.out.println("Files in " + this.getName() + " directory:");
 		for (vFile file : files) {
-			System.out.printf("%s\t\t%s\t\t%s\t\t%d\t\t%s\n", file.getPermissionString(), file.getModificationTime().format(DateTimeFormatter.ISO_DATE_TIME), file.getType() == null ? "<DIR>" : "     ", file.getSize(), file.getFullName());
+			if (file instanceof vDirectory)
+				System.out.printf("%s\t\t%s\t\t%s\t\t%s\t\t%s\n", file.getPermissionString(), file.getModificationTime(), "<DIR>", "", file.getFullName());
+			else
+				System.out.printf("%s\t\t%s\t\t%s\t\t%d\t\t%s\n", file.getPermissionString(), file.getModificationTime(), "     ", file.getSize(), file.getFullName());
 		}
+	}
+
+	public void printSomeFiles(String search) {
+		List<vFile> found = new LinkedList<>();
+		for (vFile file : files) {
+			if (file.getFullName().contains(search))
+				found.add(file);
+		}
+
+		if (found.isEmpty())
+			System.out.println("No files match the search criteria.");
+		else {
+			for (vFile file : found) {
+				if (file instanceof vDirectory)
+					System.out.printf("%s\t\t%s\t\t%s\t\t%s\t\t%s\n", file.getPermissionString(), file.getModificationTime(), "<DIR>", "", file.getFullName());
+				else
+					System.out.printf("%s\t\t%s\t\t%s\t\t%d\t\t%s\n", file.getPermissionString(), file.getModificationTime(), "     ", file.getSize(), file.getFullName());
+			}
+		}
+	}
+
+	public HashSet<vFile> getFiles() {
+		return files;
 	}
 }

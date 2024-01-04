@@ -1,5 +1,6 @@
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
@@ -10,6 +11,7 @@ public class vFile implements Serializable {
 	public static final byte READ_PERMISSION = 4;       // 100 in binary
 	public static final byte WRITE_PERMISSION = 2;      // 010 in binary
 	public static final byte EXECUTE_PERMISSION = 1;    // 001 in binary
+	public static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 	private String name;
 	private vDirectory location;
 	private String type;
@@ -42,12 +44,10 @@ public class vFile implements Serializable {
 
 	// Setters
 	public void setName(String name) {
-		if (name.length() <= 9) {
-			this.name = name;
-			this.setModificationTime(LocalDateTime.now());
-		} else {
+		if (name == null || name.isEmpty() || name.length() > 9)
 			throw new IllegalArgumentException("Name must be 9 characters or less");
-		}
+		this.name = name;
+		this.setModificationTime(LocalDateTime.now());
 	}
 
 	public void setLocation(vDirectory location) {
@@ -169,16 +169,16 @@ public class vFile implements Serializable {
 		return permissionString.toString();
 	}
 
-	public LocalDateTime getCreationTime() {
-		return creationTime;
+	public String getCreationTime() {
+		return dateFormat.format(creationTime);
 	}
 
-	public LocalDateTime getModificationTime() {
-		return modificationTime;
+	public String getModificationTime() {
+		return dateFormat.format(modificationTime);
 	}
 
-	public LocalDateTime getAccessTime() {
-		return accessTime;
+	public String getAccessTime() {
+		return dateFormat.format(accessTime);
 	}
 
 	public int getStartBlock() {
@@ -200,7 +200,7 @@ public class vFile implements Serializable {
 						Created: %s
 						Last Accessed: %s
 						Last Modified: %s""",
-				name, type, size, getPermissionString(), location.getName(), creationTime, accessTime, modificationTime);
+				name, type, size, getPermissionString(), location.getName(), dateFormat.format(creationTime), dateFormat.format(accessTime), dateFormat.format(modificationTime));
 	}
 
 	@Override

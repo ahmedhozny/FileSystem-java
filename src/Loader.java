@@ -46,6 +46,7 @@ public class Loader {
 						char label = args[1].toUpperCase().charAt(0);
 						long size = Long.parseLong(args[2]);
 						vPartitions.put(label, new vPartition(label, size));
+						System.out.printf("Partition %c created successfully\n", label);
 					}
 					break;
 				case "use":
@@ -80,6 +81,8 @@ public class Loader {
 					scanner.close();
 					System.exit(0);
 					return;
+				case "":
+					break;
 				default:
 					System.out.println("Invalid command. Please enter a valid option.");
 			}
@@ -171,6 +174,10 @@ public class Loader {
 						if (args.length != 2) {
 							System.out.println("Usage: cd <folder_name>");
 						} else {
+							if (args[1].equals("~")) {
+								current_folder = partition.getRoot();
+								break;
+							}
 							try {
 								vDirectory folder = current_folder.getSubFolderByName(args[1]);
 								folder = folder == null && args[1].matches("^/.*$")? partition.getDirectoryByPath(args[1]) : folder;
@@ -190,24 +197,19 @@ public class Loader {
 							String sourceFilePath = args[1];
 							String destinationFilePath = args[2];
 
-							try {
-								vFile sourceFile = getFile(current_folder, partition, sourceFilePath);
-								if (sourceFile == null) {
-									System.out.printf("File %s doesn't exist\n", sourceFilePath);
-									break;
-								}
-								vDirectory destDirectory = getFolder(current_folder, partition, destinationFilePath);
-								if (destDirectory == null) {
-									System.out.printf("Folder %s doesn't exist\n", destinationFilePath);
-									break;
-								}
-								String destFile = destinationFilePath.substring(destinationFilePath.lastIndexOf("/") + 1);
-								partition.moveFile(sourceFile.getLocation(), sourceFile, destDirectory, destFile);
-								System.out.printf("File %s moved to %s\n", sourceFilePath, destinationFilePath);
-
-							} catch (IllegalArgumentException e) {
-								System.out.println(e.getMessage());
+							vFile sourceFile = getFile(current_folder, partition, sourceFilePath);
+							if (sourceFile == null) {
+								System.out.printf("File %s doesn't exist\n", sourceFilePath);
+								break;
 							}
+							vDirectory destDirectory = getFolder(current_folder, partition, destinationFilePath);
+							if (destDirectory == null) {
+								System.out.printf("Folder %s doesn't exist\n", destinationFilePath);
+								break;
+							}
+							String destFile = destinationFilePath.substring(destinationFilePath.lastIndexOf("/") + 1);
+							partition.moveFile(sourceFile.getLocation(), sourceFile, destDirectory, destFile);
+							System.out.printf("File %s moved to %s\n", sourceFilePath, destinationFilePath);
 						}
 						break;
 					case "cp":
@@ -217,27 +219,25 @@ public class Loader {
 							String sourceFilePath = args[1];
 							String destinationFilePath = args[2];
 
-							try {
-								vFile sourceFile = getFile(current_folder, partition, sourceFilePath);
-								if (sourceFile == null) {
-									System.out.printf("File %s doesn't exist\n", sourceFilePath);
-									break;
-								}
-								vDirectory destDirectory = getFolder(current_folder, partition, destinationFilePath);
-								if (destDirectory == null) {
-									System.out.printf("Folder %s doesn't exist\n", destinationFilePath);
-									break;
-								}
-								String destFile = destinationFilePath.substring(destinationFilePath.lastIndexOf("/") + 1);
-								partition.copyFile(sourceFile.getLocation(), sourceFile, destDirectory, destFile);
-								System.out.printf("File %s copied to %s\n", sourceFilePath, destinationFilePath);
-
-							} catch (IllegalArgumentException e) {
-								System.out.println(e.getMessage());
+							vFile sourceFile = getFile(current_folder, partition, sourceFilePath);
+							if (sourceFile == null) {
+								System.out.printf("File %s doesn't exist\n", sourceFilePath);
+								break;
 							}
+							vDirectory destDirectory = getFolder(current_folder, partition, destinationFilePath);
+							if (destDirectory == null) {
+								System.out.printf("Folder %s doesn't exist\n", destinationFilePath);
+								break;
+							}
+							String destFile = destinationFilePath.substring(destinationFilePath.lastIndexOf("/") + 1);
+							partition.copyFile(sourceFile.getLocation(), sourceFile, destDirectory, destFile);
+							System.out.printf("File %s copied to %s\n", sourceFilePath, destinationFilePath);
 						}
 						break;
 					case "dir":
+						System.out.println(current_folder);
+						break;
+					case "ls":
 						current_folder.printAllFiles();
 						break;
 					case "show":
@@ -286,6 +286,12 @@ public class Loader {
 							}
 						}
 						break;
+					case "search":
+						if (args.length != 2)
+							System.out.println("Usage: search <value>");
+						else
+							current_folder.printSomeFiles(args[1]);
+						break;
 					case "exit":
 						System.out.println("Exiting to File System");
 						return;
@@ -293,6 +299,8 @@ public class Loader {
 						System.out.println("________________________");
 						System.out.print(partition);
 						System.out.println("________________________");
+						break;
+					case "":
 						break;
 					default:
 						System.out.println("Invalid command. Please enter a valid option.");
